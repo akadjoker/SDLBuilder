@@ -9,6 +9,7 @@ The project utilizes the SDL2 and ImGui libraries to create an intuitive graphic
 
 <div>
 
+ Build RayLib
 <br />
 <img align="center"  src="https://github.com/akadjoker/SDLBuilder/blob/f38f46c2c1af56fc6d1f2751f70119c34a58842d/images/screenshot1.jpeg?raw=true"  />
 
