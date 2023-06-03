@@ -10,7 +10,7 @@ The project utilizes the SDL2 and ImGui libraries to create an intuitive graphic
 <div>
 
 <br />
-<img align="left" alt="GIF" src="https://github.com/akadjoker/chip8/blob/main/42.gif?raw=true" width="400" height="320" />
+<img align="left" alt="GIF" src="https://github.com/akadjoker/SDLBuilder/blob/f38f46c2c1af56fc6d1f2751f70119c34a58842d/images/screenshot1.jpeg?raw=true" width="400" height="320" />
 <br />
 
 </div>
