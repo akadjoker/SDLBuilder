@@ -1,0 +1,84 @@
+{
+	"module":"freetype",
+	"about":"freetype library",
+	"author":"djokersoft",
+	"version":"1.0.0",
+	"CPP":false,
+	"src":[
+"autofit/autofit.c",
+"base/ftbase.c",
+"base/ftbbox.c",
+"base/ftbdf.c",
+"base/ftbitmap.c",
+"base/ftcid.c",
+"base/ftdebug.c",
+"base/ftfstype.c",
+"base/ftgasp.c",
+"base/ftglyph.c",
+"base/ftgxval.c",
+"base/ftinit.c",
+"base/ftlcdfil.c",
+"base/ftmm.c",
+"base/ftotval.c",
+"base/ftpatent.c",
+"base/ftpfr.c",
+"base/ftstroke.c",
+"base/ftsynth.c",
+"base/ftsystem.c",
+"base/fttype1.c",
+"base/ftwinfnt.c",
+"bdf/bdf.c",
+"bzip2/ftbzip2.c",
+"cache/ftcache.c",
+"cff/cff.c",
+"cid/type1cid.c",
+"gzip/ftgzip.c",
+"lzw/ftlzw.c",
+"pcf/pcf.c",
+"pfr/pfr.c",
+"psaux/psaux.c",
+"pshinter/pshinter.c",
+"psnames/psmodule.c",
+"raster/raster.c",
+"sfnt/sfnt.c",
+"smooth/smooth.c",
+"tools/apinames.c",
+"truetype/truetype.c",
+"type1/type1.c",
+"type42/type42.c",
+"winfonts/winfnt.c"
+],
+	"include":["devel"],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"-DFT2_BUILD_LIBRARY",
+ 	   "LD_ARGS":"",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-DFT2_BUILD_LIBRARY",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+   "ARGS":"-DFT2_BUILD_LIBRARY",
+ 	   "LD_ARGS":"",
+	        "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	  "template":"",
+      "ARGS":"-DFT2_BUILD_LIBRARY",
+ 	   "LD_ARGS":"",
+	 	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}

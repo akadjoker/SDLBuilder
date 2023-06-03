@@ -1,0 +1,51 @@
+{
+	"module":"gif",
+	"about":"Load GIF Images ",
+	"author":"djokersoft",
+	"version":"1.0.0",
+	"CPP":false,
+	"src":["dev2gif.c",
+"dgif_lib.c",
+"egif_lib.c",
+"getarg.c",
+"gif_err.c",
+"gif_font.c",
+"gif_hash.c",
+"gifalloc.c",
+"qprintf.c",
+"quantize.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"-Wno-unused-result -DHAVE_CONFIG_H ",
+ 	   "LD_ARGS":"",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-Wno-unused-result -DHAVE_CONFIG_H ",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"-Wno-unused-result -DHAVE_CONFIG_H ",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "template":"",
+ 	   "ARGS":"-Wno-unused-result -DHAVE_CONFIG_H ",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}  
+

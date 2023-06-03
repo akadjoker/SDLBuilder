@@ -1,0 +1,41 @@
+{
+	"module":"raylib",
+	"about":"raylib library",
+	"author":"djokersoft",
+	"version":"1.0.0",
+	"CPP":false,
+	"src":["rcore.c","utils.c","rshapes.c","raudio.c","rtextures.c","rtext.c","rmodels.c","rgui.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":" -O1 -D_GNU_SOURCE -std=c99 -Wno-missing-braces -Werror=pointer-arith -fno-strict-aliasing  -Werror=implicit-function-declaration -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33",
+ 	   "LD_ARGS":"-lGL -lc -lm -lpthread -ldl -lrt",
+	   "src":["rglfw.c"],
+	   "include":["raylib/src/external/glfw/include","raylib/src/external/glfw/deps/mingw"]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"-D_DEFAULT_SOURCE -DPLATFORM_ANDROID -DGRAPHICS_API_OPENGL_ES2",
+ 	   "LD_ARGS":"-u ANativeActivity_onCreate   -llog -landroid -lEGL -lGLESv2 -lOpenSLES -lc -lm",
+	    "src":["android_native_app_glue.c"],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	  "template":"minshell.html",
+	   "ARGS":"-Os -std=gnu99 -D_GNU_SOURCE -DPLATFORM_WEB -DGRAPHICS_API_OPENGL_ES2 -Wno-missing-braces -Werror=pointer-arith -fno-strict-aliasing",
+ 	   "LD_ARGS":"-s USE_GLFW=3  -D_DEFAULT_SOURCE -fPIC",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}

@@ -1,0 +1,63 @@
+{
+	"module":"png",
+	"about":" ",
+	"author":"djokersoft",
+	"version":"1.0.0",
+"CPP":false,
+	"src":[
+"png.c",
+"pngerror.c",
+"pngget.c",
+"pngmem.c",
+"pngpread.c",
+"pngread.c",
+"pngrio.c",
+"pngrtran.c",
+"pngrutil.c",
+"pngset.c",
+"pngtrans.c",
+"pngwio.c",
+"pngwrite.c",
+"pngwtran.c",
+"pngwutil.c",
+"mips/mips_init.c",
+"mips/filter_msa_intrinsics.c",
+"intel/intel_init.c",
+"intel/filter_sse2_intrinsics.c",
+"powerpc/powerpc_init.c",
+"powerpc/filter_vsx_intrinsics.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"-fno-strict-aliasing",
+ 	   "LD_ARGS":"-lz",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-fno-strict-aliasing",
+ 	   "LD_ARGS":"-lz",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"-fno-strict-aliasing",
+ 	   "LD_ARGS":"-lz",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "template":"",
+ 	   "ARGS":"-fno-strict-aliasing",
+ 	   "LD_ARGS":"-lz",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}  
+

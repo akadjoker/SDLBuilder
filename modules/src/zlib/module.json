@@ -1,0 +1,61 @@
+{
+	"module":"zlib",
+	"about":" ",
+	"author":"djokersoft",
+	"version":"1.0.0",
+"CPP":false,
+	"src":[
+ "adler32.c",
+ "compress.c",
+ "crc32.c",
+ "deflate.c",
+ "gzclose.c",
+ "gzlib.c",
+ "gzread.c",
+ "gzwrite.c",
+ "infback.c",
+ "inffast.c",
+ "inflate.c",
+ "inftrees.c",
+ "ioapi.c",
+ "mztools.c",
+ "trees.c",
+ "uncompr.c",
+ "unzip.c",
+ "zip.c",
+ "zutil.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"-fPIC -DSYSTEM_LINUX -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN",
+ 	   "LD_ARGS":"",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-DSYSTEM_WINDOWS",
+ 	    "LD_ARGS":"",
+	    "src":["iowin32.c"],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"-DSYSTEM_LINUX -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "template":"",
+ 	   "ARGS":"-DSYSTEM_LINUX -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}  
+
