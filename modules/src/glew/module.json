@@ -4,6 +4,10 @@
 	"author":"djokersoft",
 	"version":"1.0.0",
 	"CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","windows"],
+	"depends":[""],
 	"src":["glew.c"],
 	"include":[""],
    	"plataforms":

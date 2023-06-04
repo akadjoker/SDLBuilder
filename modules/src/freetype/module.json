@@ -4,6 +4,10 @@
 	"author":"djokersoft",
 	"version":"1.0.0",
 	"CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":[""],
 	"src":[
 "autofit/autofit.c",
 "base/ftbase.c",
@@ -48,7 +52,7 @@
 "type42/type42.c",
 "winfonts/winfnt.c"
 ],
-	"include":["devel"],
+	"include":["src/freetype/devel"],
    	"plataforms":
 	{
 	  "linux":

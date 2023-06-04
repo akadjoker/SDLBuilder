@@ -4,6 +4,10 @@
 	"author":"djokersoft",
 	"version":"1.0.0",
     "CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":[""],
 	"src":["stb_image.c","stb_image_write.c"],
 	"include":[""],
    	"plataforms":
@@ -33,7 +37,6 @@
 	  {
 	   "template":"",
  	   "ARGS":"",
- 	   "LD_ARGS":"",
  	   "LD_ARGS":"",
 	    "src":[""],
 	    "include":[""]

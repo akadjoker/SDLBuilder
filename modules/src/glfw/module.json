@@ -1,0 +1,76 @@
+{
+	"module":"glfw",
+	"about":"openg shared library",
+	"author":"djokersoft",
+	"version":"1.0.0",
+	"CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","emscripten","windows"],
+	"depends":[""],
+	"src":["context.c",
+"init.c",
+"input.c",
+"monitor.c",
+"vulkan.c",
+"window.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"-D_GLFW_X11",
+ 	   "LD_ARGS":"-lGL -lc -lm -lpthread -ldl -lrt",
+	   "src":["x11_init.c",
+"x11_monitor.c",
+"x11_window.c",
+"glx_context.c",
+"linux_joystick.c",
+"posix_thread.c",
+"posix_time.c",
+"xkb_unicode.c",
+"egl_context.c",
+"osmesa_context.c"],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"-D_GLFW_WIN32",
+ 	   "LD_ARGS":"",
+	    "src":["win32_init.c",
+"win32_joystick.c",
+"win32_monitor.c",
+"win32_time.c",
+"win32_thread.c",
+"win32_window.c",
+"wgl_context.c",
+"egl_context.c",
+"osmesa_context.c"],
+	    "include":[]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	  "template":"",
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"-s USE_GLFW=3 -s MIN_WEBGL_VERSION=2 ",
+	    "src":["x11_init.c",
+"x11_monitor.c",
+"x11_window.c",
+"glx_context.c",
+"linux_joystick.c",
+"posix_thread.c",
+"posix_time.c",
+"xkb_unicode.c",
+"egl_context.c",
+"osmesa_context.c"],
+	    "include":[""]
+	  }
+      }
+}

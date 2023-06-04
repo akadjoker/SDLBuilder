@@ -4,6 +4,10 @@
 	"author":"djokersoft",
 	"version":"1.0.0",
     "CPP":true,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":[""],
 	"src":["sweep/advancing_front.cc","sweep/cdt.cc","sweep/sweep.cc","sweep/sweep_context.cc","common/shapes.cc"],
 	"include":["include/common","include/sweep"],
    	"plataforms":

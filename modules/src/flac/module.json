@@ -1,0 +1,46 @@
+{
+	"module":"flac",
+	"about":"",
+	"author":"djokersoft",
+	"version":"1.0.0",
+    "CPP":false,
+    "extern":true,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":["vorbis"],
+	"src":[""],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"-lFLAC",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "template":"",
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+     }
+}  
+

@@ -32,7 +32,6 @@
 #include <SFML/System/Vector2.hpp>
 #include <string>
 #include <vector>
-#include <cstring>
 
 
 namespace sf

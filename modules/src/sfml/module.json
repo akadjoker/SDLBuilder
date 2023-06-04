@@ -1,9 +1,13 @@
 {
 	"module":"sfml",
-	"about":" ",
+	"about":"SFML — Simple and Fast Multimedia Library",
 	"author":"djokersoft",
-	"version":"1.0.0",
+	"version":"2.5.1",
 	"CPP":true,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","windows"],
+"depends":["freetype","stb-image","openal","vorbis","flac"],
 	"src":[
 "SFML/System/Clock.cpp",
 "SFML/System/Err.cpp",
@@ -97,7 +101,7 @@
 	  "linux":
 	  {
  	   "ARGS":"-fPIC -fno-strict-aliasing -DSFML_STATIC  -DSFML_BUILD_GRAPHICS -DSFML_BUILD_NETWORK -DSFML_USE_STATIC_STD_LIBS -DUNICODE -D_UNICODE -DSFML_BUILD_AUDIO -DOV_EXCLUDE_STATIC_CALLBACKS -DFLAC__NO_DLL -DSTBI_FAILURE_USERMSG",
- 	   "LD_ARGS":"-lopenal -lvorbis -lFLAC -lGL -lc -lm -lpthread -ludev -ldl -lrt  -lX11 -lXext -lXrandr -lXi",
+ 	   "LD_ARGS":"-lGL -lc -lm -lpthread -ludev -ldl -lrt  -lX11 -lXext -lXrandr -lXi",
 	   "src":[
 "SFML/System/Unix/ClockImpl.cpp",
 "SFML/System/Unix/MutexImpl.cpp",

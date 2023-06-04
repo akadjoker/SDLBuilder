@@ -10,6 +10,8 @@
 #include "imgui_impl_sdlrenderer.h"
 #include "template.hpp"
 #include "TextEditor.h"
+// find . -name "*.c" > lista_fontes.txt
+// grep -nHIwrE -- Py_GetBuildInfo
 
 #include "Async.hpp"
 #include <SDL2/SDL.h>
@@ -33,6 +35,11 @@ enum class BuildType
     SHARED
 };
 
+bool isStringEmpty(const std::string &str)
+{
+    return str.empty();
+}
+
 class Module
 {
 public:
@@ -41,21 +48,55 @@ public:
         path = fs::path(fileName).parent_path().string() + pathSeparator;
         std::cout << "Load Module: " << fileName << std::endl;
 
+        // linuxArgs      = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Linux ";
 
-        linuxArgs = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "modules" + pathSeparator + "include" + pathSeparator + "Linux ";
-        androidArgs = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "modules" + pathSeparator + "include" + pathSeparator + "Android ";
-        emscriptenArgs = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "modules" + pathSeparator + "include" + pathSeparator + "Web ";
+        // androidArgs    = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Android ";
 
-        linuxLdArgs= " -L" + currentDir +pathSeparator+ "modules" + pathSeparator + "libs" + pathSeparator + "Linux ";
-        androidLdArgs= " -L" + currentDir +pathSeparator+ "modules" + pathSeparator + "libs" + pathSeparator + "Android ";
-        emscriptenLdArgs= " -L" + currentDir +pathSeparator+ "modules" + pathSeparator + "libs" + pathSeparator + "Web ";
+        // emscriptenArgs = " -I" + path + "include  -I" + path + "src -I" + currentDir+pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Web ";
 
+        // linuxLdArgs = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Linux ";
+        // androidLdArgs = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Android ";
+        // emscriptenLdArgs = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Web ";
 
         Load();
     }
     ~Module()
     {
         //   std::cout << "Module destroyed" << std::endl;
+    }
+
+    bool isForLinux()
+    {
+        return suportSystem("linux");
+    }
+
+    bool isForAndroid()
+    {
+        return suportSystem("android");
+    }
+
+    bool isForEmscripten()
+    {
+        return suportSystem("emscripten");
+    }
+
+    bool isForWindows()
+    {
+        return suportSystem("windows");
+    }
+
+    bool suportSystem(const std::string &sys)
+    {
+
+        for (const auto &s: systems)
+        {
+            size_t position = s.find(sys);
+            if (position != std::string::npos) 
+            {
+               return true;
+            } 
+        }
+        return false;
     }
 
     bool CompileLinux(bool isStatic);
@@ -68,6 +109,8 @@ public:
     bool BuildAndroid(bool isStatic);
 
     bool BuildEmscripten();
+
+    void DependTree();
 
     bool Load()
     {
@@ -91,9 +134,13 @@ public:
             author = parsedJson["author"];
             version = parsedJson["version"];
             isCpp = parsedJson["CPP"];
-
+            isShared = parsedJson["shared"];
+            isExtern = parsedJson["extern"]; // just to include
+            depends = parsedJson["depends"]; // depend of modules to compile
             srcFiles = parsedJson["src"];
             includeDirs = parsedJson["include"];
+
+            systems= parsedJson["system"];
 
             json plataforms = parsedJson["plataforms"];
 
@@ -101,77 +148,93 @@ public:
             json linuxPlatform = plataforms["linux"];
             //   std::cout << "linuxPlatform: " << linuxPlatform << std::endl;
 
-            linuxArgs += linuxPlatform["ARGS"];
             linuxLdArgs += linuxPlatform["LD_ARGS"];
             linuxSrcFiles = linuxPlatform["src"];
             linuxIncludeDirs = linuxPlatform["include"];
 
             // // Acessar os dados da plataforma Android
             json androidPlatform = plataforms["android"];
-            androidArgs += androidPlatform["ARGS"];
             androidLdArgs += androidPlatform["LD_ARGS"];
             androidSrcFiles = androidPlatform["src"];
             androidIncludeDirs = androidPlatform["include"];
 
             // // Acessar os dados da plataforma Emscripten
             json emscriptenPlatform = plataforms["emscripten"];
-            emscriptenArgs += emscriptenPlatform["ARGS"];
+
             emscriptenLdArgs += emscriptenPlatform["LD_ARGS"];
             emscriptenSrcFiles = emscriptenPlatform["src"];
             emscriptenIncludeDirs = emscriptenPlatform["include"];
 
+            module_root = currentDir + pathSeparator + "modules" + pathSeparator;
 
-            std::string module_root = currentDir + pathSeparator + "modules" + pathSeparator  ;
-          
-            for (const auto inc: includeDirs )
-            {
-                if (inc.empty())
-                    continue;
-                linuxArgs += " -I" + module_root + inc + " ";
-                androidArgs += " -I" + module_root + inc + " ";
-                emscriptenArgs += " -I" + module_root + inc + " ";
-            }
-            
-//-I/media/djoker/data/code/projectos/SDLBuilder/modules/src/raylib/external/glfw/include 
+            // for (const auto inc : includeDirs)
+            // {
+            //     if (inc.empty())
+            //         continue;
+            //     linuxArgs += " -I" + module_root + inc + " ";
+            //     androidArgs += " -I" + module_root + inc + " ";
+            //     emscriptenArgs += " -I" + module_root + inc + " ";
+            // }
 
-            for (const auto inc: linuxIncludeDirs )
-            {
-                if (inc.empty())
-                    continue;
-                linuxArgs += " -I" + module_root + inc + " ";
-
-            }
+            // for (const auto inc : linuxIncludeDirs)
+            // {
+            //     if (inc.empty())
+            //         continue;
+            //     //  std::cout<<"Include: " << module_root + inc<<std::endl;
+            //     linuxArgs += " -I" + module_root + inc + " ";
+            // }
 
             // linuxArgs += " -I" + path + "src ";
             // androidArgs += " -I" + path + "src ";
             // emscriptenArgs += " -I" + path + "src ";
+            linuxArgs += linuxPlatform["ARGS"];
+            androidArgs += androidPlatform["ARGS"];
+            emscriptenArgs += emscriptenPlatform["ARGS"];
 
+            
+            systems.erase(std::remove_if(systems.begin(), systems.end(), isStringEmpty), systems.end());
+
+            depends.erase(std::remove_if(depends.begin(), depends.end(), isStringEmpty), depends.end());
+            srcFiles.erase(std::remove_if(srcFiles.begin(), srcFiles.end(), isStringEmpty), srcFiles.end());
+            includeDirs.erase(std::remove_if(includeDirs.begin(), includeDirs.end(), isStringEmpty), includeDirs.end());
+
+            linuxSrcFiles.erase(std::remove_if(linuxSrcFiles.begin(), linuxSrcFiles.end(), isStringEmpty), linuxSrcFiles.end());
+            linuxIncludeDirs.erase(std::remove_if(linuxIncludeDirs.begin(), linuxIncludeDirs.end(), isStringEmpty), linuxIncludeDirs.end());
+
+            androidSrcFiles.erase(std::remove_if(androidSrcFiles.begin(), androidSrcFiles.end(), isStringEmpty), androidSrcFiles.end());
+            androidIncludeDirs.erase(std::remove_if(androidIncludeDirs.begin(), androidIncludeDirs.end(), isStringEmpty), androidIncludeDirs.end());
+
+            emscriptenSrcFiles.erase(std::remove_if(emscriptenSrcFiles.begin(), emscriptenSrcFiles.end(), isStringEmpty), emscriptenSrcFiles.end());
+            emscriptenIncludeDirs.erase(std::remove_if(emscriptenIncludeDirs.begin(), emscriptenIncludeDirs.end(), isStringEmpty), emscriptenIncludeDirs.end());
 
             std::cout << "Module: " << moduleName << std::endl;
             std::cout << "Version: " << version << std::endl;
-            std::cout << "Compile Args: " << linuxArgs << std::endl;
-            std::cout << "Link Args: " << linuxLdArgs << std::endl;
-
-
+            //  std::cout << "Compile Args: " << linuxArgs << std::endl;
+            //    std::cout << "Link Args: " << linuxLdArgs << std::endl;
 
             file.close();
             return true;
         }
         catch (const std::exception &ex)
         {
-            std::cerr << "Error: " << ex.what() << std::endl;
+            std::cerr << "Error load module: " << ex.what() << std::endl;
             return false;
         }
     }
 
     bool isCpp{false};
+    bool isExtern{false};
+    bool isShared{false};
     std::string filename;
     std::string path;
+    std::string module_root;
 
     std::string moduleName;
     std::string about;
     std::string author;
     std::string version;
+
+    std::vector<std::string> depends;
 
     std::vector<std::string> obsFiles;
     std::vector<std::string> srcFiles;
@@ -179,6 +242,7 @@ public:
 
     std::string linuxArgs;
     std::string linuxLdArgs;
+    std::vector<std::string> systems;
     std::vector<std::string> linuxSrcFiles;
     std::vector<std::string> linuxIncludeDirs;
 
@@ -191,6 +255,13 @@ public:
     std::string emscriptenLdArgs;
     std::vector<std::string> emscriptenSrcFiles;
     std::vector<std::string> emscriptenIncludeDirs;
+
+    std::string finalLinuxArgs;
+    std::string finalLinuxLdArgs;
+    std::string finalAndroidArgs;
+    std::string finalAndroidLdArgs;
+    std::string finalEmscriptenArgs;
+    std::string finalEmscriptenLdArgs;
 };
 
 std::vector<std::string> getJsonFileNames(const std::string &folderPath)
@@ -262,7 +333,6 @@ void setFontWithSize(const char *fontPath, float fontSize)
     io.FontDefault = io.Fonts->AddFontFromFileTTF(fontPath, fontSize);
 }
 
-
 static bool loadModules = false;
 static bool abortCompilation = false;
 static bool isCompiling = false;
@@ -276,18 +346,28 @@ using ModulePtr = std::shared_ptr<Module>;
 std::vector<ModulePtr> moduleList;
 std::vector<std::string> fileNames;
 
+ModulePtr getModuleByName(const std::string &moduleName)
+{
+    for (const auto &module : moduleList)
+    {
+        if (module->moduleName == moduleName)
+            return module;
+    }
+    return nullptr;
+}
+
 long int getFileWriteTime(const std::string &filePath)
 {
     if (fs::exists(filePath))
     {
-         struct stat fileStat;
-        if (stat(filePath.c_str(), &fileStat) == 0) 
+        struct stat fileStat;
+        if (stat(filePath.c_str(), &fileStat) == 0)
             return fileStat.st_mtime;
         return 0;
     }
     else
     {
-      //  std::cout << "File not found: " << filePath << std::endl;
+        //  std::cout << "File not found: " << filePath << std::endl;
         return 0;
     }
 }
@@ -339,24 +419,164 @@ void AddLog(const std::string &log)
     consoleOutput += log + "\n";
 }
 
-void ProcessLinuxCodeCompile(bool  isStatic,const std::string &compiler, const std::vector<std::string> &code, const std::vector<std::string> &objs, const std::string &args, int id, int startIdx, int endIdx)
+void Module::DependTree()
 {
-    std::cout << "Thread id: " << id << " starts: " << startIdx << " end: " << endIdx << std::endl;
+    std::string cArgsLinux;
+    std::string lArgsLinux;
+
+    std::string cArgsWeb;
+    std::string lArgsWeb;
+
+    std::string cArgsAndroid;
+    std::string lArgsAndroid;
+
+    std::string IncludeLinux = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Linux ";
+    std::string IncludeWeb = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Android ";
+    std::string IncludeAndroid = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Web ";
+
+    for (const auto inc : includeDirs)
+    {
+        if (inc.empty())
+            continue;
+        IncludeLinux += " -I" + module_root + inc + " ";
+        IncludeWeb += " -I" + module_root + inc + " ";
+        IncludeAndroid += " -I" + module_root + inc + " ";
+    }
+
+    for (const auto inc : linuxIncludeDirs)
+    {
+        if (inc.empty())
+            continue;
+        IncludeLinux += " -I" + module_root + inc + " ";
+    }
+
+    for (const auto inc : androidIncludeDirs)
+    {
+        if (inc.empty())
+            continue;
+        IncludeAndroid += " -I" + module_root + inc + " ";
+    }
+
+    for (const auto inc : emscriptenIncludeDirs)
+    {
+        if (inc.empty())
+            continue;
+        IncludeWeb += " -I" + module_root + inc + " ";
+    }
+
+    std::string LibLinux = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Linux ";
+    std::string LibAndroid = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Android ";
+    std::string LibWeb = " -L" + currentDir + pathSeparator + "modules" + pathSeparator + "libs" + pathSeparator + "Web ";
+
+    for (auto depend : depends)
+    {
+        if (depend.empty())
+            continue;
+        AddLog("Depend: " + depend);
+        auto module = getModuleByName(depend);
+        if (module == nullptr)
+        {
+            AddLog("Module not found: " + depend);
+            continue;
+        }
+        else
+        {
+            Module *mod = module.get();
+
+            std::cout << moduleName << "--- Depend: " << mod->moduleName << std::endl;
+
+            IncludeLinux += " -I" + mod->path + "include ";
+            IncludeAndroid += " -I" + mod->path + "include ";
+
+            for (const auto inc : mod->includeDirs)
+            {
+                if (inc.empty())
+                    continue;
+                IncludeLinux += " -I" + mod->module_root + inc + " ";
+                IncludeAndroid += " -I" + mod->module_root + inc + " ";
+                IncludeWeb += " -I" + mod->module_root + inc + " ";
+            }
+
+            for (const auto inc : mod->linuxIncludeDirs)
+            {
+                if (inc.empty())
+                    continue;
+                IncludeLinux += " -I" + mod->module_root + inc + " ";
+            }
+
+            for (const auto inc : mod->androidIncludeDirs)
+            {
+                if (inc.empty())
+                    continue;
+                IncludeAndroid += " -I" + mod->module_root + inc + " ";
+            }
+
+            for (const auto inc : mod->emscriptenIncludeDirs)
+            {
+                if (inc.empty())
+                    continue;
+                IncludeWeb += " -I" + mod->module_root + inc + " ";
+            }
+
+            if (!mod->isShared)
+            {
+                IncludeWeb += " -I" + mod->path + "include ";
+            }
+
+            if (mod->isExtern)
+            {
+                lArgsLinux += " " + mod->linuxLdArgs + " ";
+                lArgsAndroid += " " + mod->androidLdArgs + " ";
+                lArgsWeb += " " + mod->emscriptenArgs + " ";
+            }
+            else
+            {
+                if (mod->isShared)
+                {
+
+                    lArgsLinux += " -l" + mod->moduleName + ".so ";
+                    lArgsAndroid += " -l" + mod->moduleName + ".so ";
+                }
+                else
+                {
+                    lArgsLinux += " -ls" + mod->moduleName + " ";
+                    lArgsWeb += " -ls" + mod->moduleName + " ";
+                    lArgsAndroid += " -ls" + mod->moduleName + " ";
+                }
+            }
+        }
+    }
+
+    finalLinuxArgs = IncludeLinux + cArgsLinux + linuxArgs;
+    finalAndroidArgs = IncludeAndroid + cArgsAndroid + androidArgs;
+    finalEmscriptenArgs = IncludeWeb + cArgsWeb + emscriptenArgs;
+
+    std::cout << moduleName << " Final Linux Args: \n"
+              << finalLinuxArgs << std::endl;
+
+    finalLinuxLdArgs = LibLinux + lArgsLinux + linuxLdArgs;
+    finalAndroidLdArgs = LibAndroid + lArgsAndroid + androidLdArgs;
+    finalEmscriptenLdArgs = LibWeb + lArgsWeb + emscriptenLdArgs;
+
+    std::cout << moduleName << " Final Linux LdArgs: \n"
+              << finalLinuxLdArgs << std::endl;
+}
+
+void ProcessLinuxCodeCompile(bool isStatic, const std::string &compiler, const std::vector<std::string> &code, const std::vector<std::string> &objs, const std::string &args, int id, int startIdx, int endIdx)
+{
+  //  std::cout << "Thread id: " << id << " starts: " << startIdx << " end: " << endIdx << std::endl;
 
     std::string finalArgs = args;
-    
-    if ( !isStatic)
-         finalArgs +=" -shared -fPIC ";
 
-
+    if (!isStatic)
+        finalArgs += " -shared -fPIC ";
 
     for (int i = startIdx; i < endIdx; ++i)
     {
         if (abortCompilation)
             return;
-       
 
-        int64_t srtTime   = getFileWriteTime(code[i]);
+        int64_t srtTime = getFileWriteTime(code[i]);
         int64_t buildTime = getFileWriteTime(objs[i]);
         std::string command = compiler + " " + finalArgs + " -c " + code[i] + " -o " + objs[i];
         std::string output = "";
@@ -377,46 +597,63 @@ void ProcessLinuxCodeCompile(bool  isStatic,const std::string &compiler, const s
             continue;
         }
 
-
-        if (output != "")
+        if (!output.empty())
         {
-            replace_character(output, "‘", "'");
-            replace_character(output, "’", "'");
-            std::vector<std::string> message= get_result(output);
-            if (message.size() >= 5)
+            std::cout << output << std::endl;
+            size_t position = output.find("error:");
+            if (position != std::string::npos)
             {
-                 if (message[4]=="warning")
-                {
-                    AddLog("Warning: " + message[0] +  "\n Message:   (" + message[5]+")" );
-                    
-                }else
-                if (message[4]=="error")
-                {
-                    AddLog("Error: " + message[0] +  "\n  Message:   (" + message[5]+")" );
-                    abortCompilation = true;
-                     AddLog("Aborting compilation");
-                     return;
-                }else
-                if (message[4]=="fatal error")
-                {
-                    AddLog("Fatal Error: " + message[0] + " (" + message[5]+")" );
-                    abortCompilation = true;
-                     AddLog("Aborting compilation");
-                     return;
-                }
-            } else
-            {
-                AddLog(output);
+                abortCompilation = true;
+                AddLog("Aborting compilation");
+                return;
             }
+              AddLog(output);
         }
+
+        // if (output != "")
+        // {
+        //     replace_character(output, "‘", "'");
+        //     replace_character(output, "’", "'");
+        //     std::vector<std::string> message = get_result(output);
+        //     if (message.size() >= 5)
+        //     {
+        //         if (message[4] == "warning")
+        //         {
+        //             AddLog("Warning: " + message[0] + "\n Message:   (" + message[5] + ")");
+        //         }
+        //         else if (message[4] == "error")
+        //         {
+        //             AddLog("Error: " + message[0] + "\n  Message:   (" + message[5] + ")");
+        //             abortCompilation = true;
+        //             AddLog("Aborting compilation");
+        //             return;
+        //         }
+        //         else if (message[4] == "fatal error")
+        //         {
+        //             AddLog("Fatal Error: " + message[0] + " (" + message[5] + ")");
+        //             abortCompilation = true;
+        //             AddLog("Aborting compilation");
+        //             return;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         AddLog(output);
+        //     }
+        // }
     }
 }
 
 bool Module::CompileLinux(bool isStatic)
 {
+    if (!isForLinux())
+    {
+        AddLog("Skipping Linux compilation for module: " + moduleName);
+        return false;
+    }
+
     std::vector<std::string> code;
     obsFiles.clear();
-
 
     std::string outPath = path + "obj/Linux/";
 
@@ -429,13 +666,12 @@ bool Module::CompileLinux(bool isStatic)
     {
         if (srcFile.empty())
             continue;
-        std::string fileName =path+"src/"+ srcFile;
+        std::string fileName = path + "src/" + srcFile;
         if (!fs::exists(fileName))
         {
-            AddLog  ("File not found: " + fileName);
+            AddLog("File not found: " + fileName + "  Aborting compilation");
             continue;
         }
-    
 
         code.push_back(fileName);
         std::string objFile = srcFile.substr(0, srcFile.find_last_of(".")) + ".o";
@@ -452,12 +688,12 @@ bool Module::CompileLinux(bool isStatic)
     {
         if (srcFile.empty())
             continue;
-        std::string fileName =path+"src/"+ srcFile;
+        std::string fileName = path + "src/" + srcFile;
 
         if (!fs::exists(fileName))
         {
-            AddLog  ("File not found: " + fileName);
-            continue;
+            AddLog("File not found: " + fileName + "  Aborting compilation");
+            return false;
         }
         code.push_back(fileName);
         std::string objFile = srcFile.substr(0, srcFile.find_last_of(".")) + ".o";
@@ -491,9 +727,7 @@ bool Module::CompileLinux(bool isStatic)
     }
 
     int blockSize = totalCode / numThreads;
-
     std::vector<std::thread> threads;
-
     std::string compiler;
     if (isCpp)
     {
@@ -503,13 +737,17 @@ bool Module::CompileLinux(bool isStatic)
     {
         compiler = "gcc";
     }
+
+    AddLog("Compile: " + moduleName);
+    AddLog("Args: " + finalLinuxArgs);
+
     processProgress = 0;
     maxProgress = totalCode;
     for (int i = 0; i < numThreads; ++i)
     {
         int startIdx = i * blockSize;
         int endIdx = (i == numThreads - 1) ? totalCode : startIdx + blockSize;
-        threads.emplace_back(ProcessLinuxCodeCompile, isStatic,compiler, code, obsFiles, linuxArgs, i, startIdx, endIdx);
+        threads.emplace_back(ProcessLinuxCodeCompile, isStatic, compiler, code, obsFiles, finalLinuxArgs, i, startIdx, endIdx);
     }
     isCompiling = true;
     for (auto &thread : threads)
@@ -522,13 +760,13 @@ bool Module::CompileLinux(bool isStatic)
         abortCompilation = false;
         return false;
     }
-    AddLog("Compile: " + moduleName + " finished ;) ");
 
     return true;
 }
 void ProcessLinuxBuild(bool isStatic, const std::string &moduleName, const std::string &compiler, const std::vector<std::string> &objs, const std::string &args)
 {
-    AddLog("Build:  Linux " + compiler + " " + moduleName);
+
+
     std::string buildType;
     std::string extraArgs;
 
@@ -538,34 +776,40 @@ void ProcessLinuxBuild(bool isStatic, const std::string &moduleName, const std::
         allObjs += obj + " ";
     }
     // std::string command = compiler + " " + allObjs + " -o " + currentDir + "/libs/Linux/lib" + moduleName + buildType+" "+ extraArgs+" " + args ;
-    std::string command ="";
-    std::string outPath =""; 
-    
+    std::string command = "";
+    std::string outPath = "";
+
     if (isStatic)
     {
-        outPath = currentDir + "/modules/libs/Linux/libs"+moduleName+".a"; 
-        command =  "ar -r -s  "+outPath +" " +allObjs;
+        outPath = currentDir + "/modules/libs/Linux/libs" + moduleName + ".a";
+        command = "ar -r -s  " + outPath + " " + allObjs;
     }
     else
     {
-     outPath = currentDir + "/modules/libs/Linux/lib"+moduleName+".so"; 
-     command = compiler +" -shared -fPIC -o "+outPath+" "+allObjs+" "+args;
+        outPath = currentDir + "/modules/libs/Linux/lib" + moduleName + ".so";
+        command = compiler + " -shared -fPIC -o " + outPath + " " + allObjs + " " + args;
     }
-    
-    std::cout << "Build:  Linux " << command << std::endl;
+
     AddLog("Save to " + outPath);
     std::string output = run_command(command);
     if (!output.empty())
     {
         AddLog("Build: " + output);
-    } else
+    }
+    else
     {
         AddLog("Build: " + moduleName + " finished ;) ");
     }
-  //  std::cout << "Build: " << output << std::endl;
+    //  std::cout << "Build: " << output << std::endl;
 }
 bool Module::BuildLinux(bool isStatic)
 {
+     if (!isForLinux())
+    {
+        AddLog("Skipping Linux building for module: " + moduleName);
+        return false;
+    }
+
     std::string compiler;
     if (isCpp)
     {
@@ -575,23 +819,25 @@ bool Module::BuildLinux(bool isStatic)
     {
         compiler = "gcc";
     }
-    std::thread thread(ProcessLinuxBuild, isStatic, moduleName, compiler, obsFiles, linuxLdArgs);
+    AddLog("Build: " + moduleName);
+    AddLog("Args: " + finalLinuxArgs);
+
+    std::thread thread(ProcessLinuxBuild, isStatic, moduleName, compiler, obsFiles, finalLinuxArgs);
     thread.join();
     return true;
 }
 
-
 void ProcessEmscriptenCodeCompile(const std::string &compiler, const std::vector<std::string> &code, const std::vector<std::string> &objs, const std::string &args, int id, int startIdx, int endIdx)
 {
     std::cout << "Thread id: " << id << " starts: " << startIdx << " end: " << endIdx << std::endl;
-    std::string finalArgs =args;
+    std::string finalArgs = args;
 
     for (int i = startIdx; i < endIdx; ++i)
     {
         if (abortCompilation)
             return;
-       
-        int64_t srtTime   = getFileWriteTime(code[i]);
+
+        int64_t srtTime = getFileWriteTime(code[i]);
         int64_t buildTime = getFileWriteTime(objs[i]);
         std::string command = compiler + " " + finalArgs + " -c " + code[i] + " -o " + objs[i];
         std::string output = "";
@@ -611,53 +857,51 @@ void ProcessEmscriptenCodeCompile(const std::string &compiler, const std::vector
             processProgress++;
             continue;
         }
- 
 
         if (output != "")
         {
             replace_character(output, "‘", "'");
             replace_character(output, "’", "'");
-            std::vector<std::string> message= get_result(output);
+            std::vector<std::string> message = get_result(output);
             if (message.size() >= 5)
             {
-                 if (message[4]=="warning")
+                if (message[4] == "warning")
                 {
-                    AddLog("Warning: " + message[0] +  "\n Message:   (" + message[5]+")" );
-                    
-                }else
-                if (message[4]=="error")
+                    AddLog("Warning: " + message[0] + "\n Message:   (" + message[5] + ")");
+                }
+                else if (message[4] == "error")
                 {
-                    AddLog("Error: " + message[0] +  "\n  Message:   (" + message[5]+")" );
-                    abortCompilation = true;
-                     AddLog("Aborting compilation");
-                     return;
-                }else
-                if (message[4]=="fatal error")
-                {
-                    AddLog("Fatal Error: " + message[0] + " (" + message[5]+")" );
+                    AddLog("Error: " + message[0] + "\n  Message:   (" + message[5] + ")");
                     abortCompilation = true;
                     AddLog("Aborting compilation");
                     return;
                 }
-            } else
+                else if (message[4] == "fatal error")
+                {
+                    AddLog("Fatal Error: " + message[0] + " (" + message[5] + ")");
+                    abortCompilation = true;
+                    AddLog("Aborting compilation");
+                    return;
+                }
+            }
+            else
             {
                 AddLog(output);
             }
-
-
-          
         }
-   
 
-    
-
-
-      
         //  std::cout << "Processing code thered: "<<id <<" src: "<< code[i] << std::endl;
     }
 }
 bool Module::CompileEmscripten()
 {
+
+    if (!isForEmscripten())
+    {
+        AddLog("Skipping Emscripten compilation for module: " + moduleName);
+        return false;
+    }
+
     std::vector<std::string> code;
     obsFiles.clear();
     std::string outPath = path + "obj/Web/";
@@ -671,13 +915,12 @@ bool Module::CompileEmscripten()
     {
         if (srcFile.empty())
             continue;
-        std::string fileName =path+"src/"+ srcFile;
+        std::string fileName = path + "src/" + srcFile;
         if (!fs::exists(fileName))
         {
-            AddLog  ("File not found: " + fileName);
+            AddLog("File not found: " + fileName);
             continue;
         }
-    
 
         code.push_back(fileName);
         std::string objFile = srcFile.substr(0, srcFile.find_last_of(".")) + ".o";
@@ -694,11 +937,11 @@ bool Module::CompileEmscripten()
     {
         if (srcFile.empty())
             continue;
-        std::string fileName =path+"src/"+ srcFile;
+        std::string fileName = path + "src/" + srcFile;
 
         if (!fs::exists(fileName))
         {
-            AddLog  ("File not found: " + fileName);
+            AddLog("File not found: " + fileName);
             continue;
         }
         code.push_back(fileName);
@@ -751,7 +994,7 @@ bool Module::CompileEmscripten()
     {
         int startIdx = i * blockSize;
         int endIdx = (i == numThreads - 1) ? totalCode : startIdx + blockSize;
-        threads.emplace_back(ProcessEmscriptenCodeCompile, compiler, code, obsFiles, emscriptenArgs, i, startIdx, endIdx);
+        threads.emplace_back(ProcessEmscriptenCodeCompile, compiler, code, obsFiles, finalEmscriptenArgs, i, startIdx, endIdx);
     }
     isCompiling = true;
     for (auto &thread : threads)
@@ -781,39 +1024,44 @@ void ProcessBuildEmscripten(const std::string &moduleName, const std::string &co
         allObjs += obj + " ";
     }
     // std::string command = compiler + " " + allObjs + " -o " + currentDir + "/libs/Linux/lib" + moduleName + buildType+" "+ extraArgs+" " + args ;
-    std::string command ="";
-    std::string outPath =""; 
-    
+    std::string command = "";
+    std::string outPath = "";
 
-    outPath = currentDir + "/modules/libs/Web/libs"+moduleName+".a"; 
-    command =  "emar -r -s  "+outPath +" " +allObjs;
+    outPath = currentDir + "/modules/libs/Web/libs" + moduleName + ".a";
+    command = "emar -r -s  " + outPath + " " + allObjs;
 
-    
     std::cout << "Build:  Linux " << command << std::endl;
     AddLog("Save to " + outPath);
     std::string output = run_command(command);
     if (!output.empty())
     {
         AddLog("Build: " + output);
-    } else
+    }
+    else
     {
         AddLog("Build: " + moduleName + " finished ;) ");
     }
-  //  std::cout << "Build: " << output << std::endl;
+    //  std::cout << "Build: " << output << std::endl;
 }
 
 bool Module::BuildEmscripten()
 {
-     std::string compiler;
+     if (!isForEmscripten())
+    {
+        AddLog("Skipping Emscripten building for module: " + moduleName);
+        return false;
+    }
+
+    std::string compiler;
     if (isCpp)
     {
         compiler = "em++";
     }
     else
     {
-        compiler = "em++";
+        compiler = "em";
     }
-    std::thread thread(ProcessBuildEmscripten, moduleName, compiler, obsFiles, emscriptenLdArgs);
+    std::thread thread(ProcessBuildEmscripten, moduleName, compiler, obsFiles, finalEmscriptenLdArgs);
     thread.join();
     return true;
 }
@@ -830,7 +1078,7 @@ bool Module::CompileAndroid(bool isStatic)
 void CompileModule(Module *module, bool isStatic, Platform plataform)
 {
 
-    AddLog("Compile: " + module->moduleName);
+
     bool result = false;
     if (module)
     {
@@ -858,7 +1106,7 @@ void CompileModule(Module *module, bool isStatic, Platform plataform)
 void BuildModule(Module *module, bool isStatic, Platform plataform)
 {
 
-    AddLog("Build: " + module->moduleName);
+ 
     bool result = false;
     if (module)
     {
@@ -897,12 +1145,18 @@ void LoadModules(const std::string &folderPath)
             moduleList.push_back(module);
             AddLog("Load Module: " + module.get()->moduleName);
             fileNames.push_back(module.get()->moduleName);
-            std::cout << filePath << std::endl;
+            //  std::cout << filePath << std::endl;
             continue;
         }
 
         // std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+
+    for (const auto &module : moduleList)
+    {
+        module.get()->DependTree();
+    }
+
     loadModules = true;
 }
 
@@ -979,7 +1233,7 @@ int main(int, char **)
     float buttonHeight = 30.0f;
     std::string current_module = "";
     Platform select_platform = Platform::Linux;
-      int screenshotIndex = 1;
+    int screenshotIndex = 1;
 
     bool done = false;
     while (!done)
@@ -1020,15 +1274,15 @@ int main(int, char **)
 
                 if (event.key.keysym.sym == SDLK_F12)
                 {
-                        std::stringstream ss;
-                        ss << "screenshot" << screenshotIndex << ".bmp";
-                        std::string screenshotFilename = ss.str();
+                    std::stringstream ss;
+                    ss << "screenshot" << screenshotIndex << ".bmp";
+                    std::string screenshotFilename = ss.str();
 
-                        SDL_Surface* surface = SDL_CreateRGBSurfaceWithFormat(0, Window_Width, Window_Height, 24, SDL_PIXELFORMAT_BGR888);
-                        SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_BGR888, surface->pixels, surface->pitch);
-                        SDL_SaveBMP(surface, screenshotFilename.c_str());
-                        screenshotIndex++;
-                        SDL_FreeSurface(surface);
+                    SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, Window_Width, Window_Height, 24, SDL_PIXELFORMAT_BGR888);
+                    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_BGR888, surface->pixels, surface->pitch);
+                    SDL_SaveBMP(surface, screenshotFilename.c_str());
+                    screenshotIndex++;
+                    SDL_FreeSurface(surface);
                 }
 
                 break;
@@ -1049,7 +1303,6 @@ int main(int, char **)
 
         if (ImGui::Button("Reload", ImVec2(buttonWidth, buttonHeight)))
         {
-            
         }
         ImGui::Separator();
         if (loadModules)
@@ -1112,25 +1365,18 @@ int main(int, char **)
         }
         if (build_android)
         {
-               ImGui::Separator();
+            ImGui::Separator();
             if (ImGui::Checkbox("Arm", &build_arm7))
             {
-                
             }
-             ImGui::SameLine();
+            ImGui::SameLine();
             if (ImGui::Checkbox("Arm64", &build_arm64))
             {
-           
-
             }
             ImGui::SameLine();
             if (ImGui::Checkbox("x86", &build_x86))
             {
-             
-               
-
             }
-
         }
         ImGui::Separator();
         if (ImGui::RadioButton("Linux", build_linux))
@@ -1151,7 +1397,6 @@ int main(int, char **)
             select_platform = Platform::Android;
         }
 
-
         ImGui::SameLine();
 
         if (ImGui::RadioButton("Web", build_web))
@@ -1171,10 +1416,9 @@ int main(int, char **)
                 isCompiling = false;
                 abortCompilation = true;
             }
-               float progressPercentage = (static_cast<float>(processProgress) / maxProgress) ;
+            float progressPercentage = (static_cast<float>(processProgress) / maxProgress);
 
-             ImGui::ProgressBar(progressPercentage, ImVec2(-1, 0), "Progresso");
-
+            ImGui::ProgressBar(progressPercentage, ImVec2(-1, 0), "Progresso");
         }
         else
         {
@@ -1189,7 +1433,11 @@ int main(int, char **)
                     {
                         if (module.get()->moduleName == current_module)
                         {
-
+                            if (module.get()->isExtern)
+                            {
+                                AddLog("Module is extern");
+                                break;
+                            }
                             std::thread loadThread(CompileModule, module.get(), build_static, select_platform);
                             loadThread.detach();
                             break;
@@ -1209,29 +1457,34 @@ int main(int, char **)
 
                         if (module.get()->moduleName == current_module)
                         {
+                            if (module.get()->isExtern)
+                            {
+                                AddLog("Module is extern");
+                                break;
+                            }
                             std::string name = module.get()->moduleName;
                             std::string path = module.get()->path;
                             consoleOutput = "";
                             AddLog("Cleaning " + name);
                             switch (select_platform)
                             {
-                            
-                                case Platform::Linux:
-                                {
-                                 removeFolder(path + "obj/Linux");   
-                                }
-                                break;
-                                case Platform::Android:
-                                {
-                                
-                                 removeFolder(path + "obj/Android");   
-                                }
-                                break;
-                                case Platform::Web:
-                                {
-                                 removeFolder(path + "obj/Web");   
-                                }
-                                break;
+
+                            case Platform::Linux:
+                            {
+                                removeFolder(path + "obj/Linux");
+                            }
+                            break;
+                            case Platform::Android:
+                            {
+
+                                removeFolder(path + "obj/Android");
+                            }
+                            break;
+                            case Platform::Web:
+                            {
+                                removeFolder(path + "obj/Web");
+                            }
+                            break;
                             }
 
                             break;
@@ -1250,7 +1503,11 @@ int main(int, char **)
                     {
                         if (module.get()->moduleName == current_module)
                         {
-
+                            if (module.get()->isExtern)
+                            {
+                                AddLog("Module is extern");
+                                break;
+                            }
                             std::thread loadThread(BuildModule, module.get(), build_static, select_platform);
                             loadThread.detach();
                             break;
@@ -1261,13 +1518,16 @@ int main(int, char **)
         } // end else
         ImGui::End();
         //********************************************************************************
-        ImGui::Begin("Console");
+        // ImGuiWindowFlags windowFlags = ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar;
+
+        ImGui::Begin("Console", nullptr, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
         if (ImGui::Button("Clean"))
         {
             consoleOutput = "";
         }
         ImGui::Separator();
-        ImGui::TextDisabled("%s", consoleOutput.c_str());
+        // ImGui::SetWindowSize(ImVec2(Window_Width, 500));
+        ImGui::TextWrapped("%s", consoleOutput.c_str());
 
         ImGui::End();
         //********************************************************************************

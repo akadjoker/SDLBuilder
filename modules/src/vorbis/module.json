@@ -1,0 +1,67 @@
+{
+	"module":"vorbis",
+	"about":" ",
+	"author":"djokersoft",
+	"version":"1.0.0",
+	"depends":[""],
+"CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"src":["bitwise.c","framing.c",
+"analysis.c",
+"bitrate.c",
+"block.c",
+"codebook.c",
+"envelope.c",
+"floor0.c",
+"floor1.c",
+"info.c",
+"lookup.c",
+"lpc.c",
+"lsp.c",
+"mapping0.c",
+"mdct.c",
+"psy.c",
+"registry.c",
+"res0.c",
+"sharedbook.c",
+"smallft.c",
+"synthesis.c",
+"vorbisenc.c",
+"vorbisfile.c",
+"window.c"],
+	"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	   "src":[""],
+	   "include":["linux"]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":["android"]
+	  },
+	  "emscripten":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}  
+

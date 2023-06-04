@@ -1,0 +1,45 @@
+{
+	"module":"ogg",
+	"about":" ",
+	"author":"djokersoft",
+	"version":"1.0.0",
+    "CPP":false,
+    "extern":false,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":[""],
+	"src":["bitwise.c","framing.c"],
+		"include":[""],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+      }
+}  
+

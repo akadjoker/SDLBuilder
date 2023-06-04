@@ -1,0 +1,45 @@
+{
+	"module":"openal",
+	"about":"",
+	"author":"djokersoft",
+	"version":"1.0.0",
+    "CPP":false,
+    "extern":true,
+    "shared":false,
+	"system":["linux","android","emscripten","windows"],
+	"depends":["vorbis"],
+	"src":[""],
+	"include":["src/openal/include/AL"],
+   	"plataforms":
+	{
+	  "linux":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"-lvorbis -lc -lm -lpthread",
+	   "src":[""],
+	   "include":[""]
+	  },
+	  "windows":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "android":
+	  {
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  },
+	  "emscripten":
+	  {
+	   "template":"",
+ 	   "ARGS":"",
+ 	   "LD_ARGS":"",
+	    "src":[""],
+	    "include":[""]
+	  }
+     }
+}  
