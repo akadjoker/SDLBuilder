@@ -417,6 +417,7 @@ void AddLog(const std::string &log)
 {
 
     consoleOutput += log + "\n";
+    
 }
 
 void Module::DependTree()
@@ -430,9 +431,13 @@ void Module::DependTree()
     std::string cArgsAndroid;
     std::string lArgsAndroid;
 
-    std::string IncludeLinux = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Linux ";
-    std::string IncludeWeb = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Android ";
-    std::string IncludeAndroid = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator + "include -I" + currentDir + "/modules" + pathSeparator + "include" + pathSeparator + "Web ";
+    std::string IncludeLinux   = " -I" + path + "include  -I" + path + "src -I" + path + "include"+ pathSeparator + "Linux " ;
+    std::string IncludeWeb     = " -I" + path + "include  -I" + path + "src -I" + path + "include"+ pathSeparator +  "Web ";
+    std::string IncludeAndroid = " -I" + path + "include  -I" + path + "src -I" + path + "include"+ pathSeparator +   "Android ";
+
+    // std::string IncludeLinux   = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator +moduleName +pathSeparator+ "include -I" + currentDir + pathSeparator+"modules" + pathSeparator + "include" + pathSeparator + "Linux ";
+    // std::string IncludeWeb     = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator +moduleName +pathSeparator+ "include -I" + currentDir + pathSeparator+"modules" + pathSeparator + "include" + pathSeparator + "Android ";
+    // std::string IncludeAndroid = " -I" + path + "include  -I" + path + "src -I" + currentDir + pathSeparator + "modules" + pathSeparator +moduleName +pathSeparator+ "include -I" + currentDir + pathSeparator+ "modules" + pathSeparator + "include" + pathSeparator + "Web ";
 
     for (const auto inc : includeDirs)
     {
@@ -447,7 +452,7 @@ void Module::DependTree()
     {
         if (inc.empty())
             continue;
-        IncludeLinux += " -I" + module_root + inc + " ";
+        IncludeLinux += " -I" + inc + " ";
     }
 
     for (const auto inc : androidIncludeDirs)
@@ -551,15 +556,11 @@ void Module::DependTree()
     finalAndroidArgs = IncludeAndroid + cArgsAndroid + androidArgs;
     finalEmscriptenArgs = IncludeWeb + cArgsWeb + emscriptenArgs;
 
-    std::cout << moduleName << " Final Linux Args: \n"
-              << finalLinuxArgs << std::endl;
 
     finalLinuxLdArgs = LibLinux + lArgsLinux + linuxLdArgs;
     finalAndroidLdArgs = LibAndroid + lArgsAndroid + androidLdArgs;
     finalEmscriptenLdArgs = LibWeb + lArgsWeb + emscriptenLdArgs;
 
-    std::cout << moduleName << " Final Linux LdArgs: \n"
-              << finalLinuxLdArgs << std::endl;
 }
 
 void ProcessLinuxCodeCompile(bool isStatic, const std::string &compiler, const std::vector<std::string> &code, const std::vector<std::string> &objs, const std::string &args, int id, int startIdx, int endIdx)
@@ -579,15 +580,32 @@ void ProcessLinuxCodeCompile(bool isStatic, const std::string &compiler, const s
         int64_t srtTime = getFileWriteTime(code[i]);
         int64_t buildTime = getFileWriteTime(objs[i]);
         std::string command = compiler + " " + finalArgs + " -c " + code[i] + " -o " + objs[i];
-        std::string output = "";
-
         if (srtTime >= buildTime)
         {
             std::lock_guard<std::mutex> lock(progressMutex);
             processProgress++;
             float progressPercentage = (static_cast<float>(processProgress) / maxProgress) * 100;
             AddLog("Compile [" + std::to_string((int)progressPercentage) + "]% " + code[i] + " > " + objs[i]);
-            output = run_command(command);
+            std::string output  = run_command(command);
+             
+             
+                if (!output.empty())
+                {
+
+
+
+                    size_t position = output.find("error:");
+                    if (position != std::string::npos)
+                    {
+                        abortCompilation = true;
+                        AddLog(output);
+              
+                        AddLog("Aborting compilation");
+                        return;
+                    }
+                  AddLog(output);
+                   std::cout << output << std::endl;
+                }
         }
         else
         {
@@ -597,18 +615,7 @@ void ProcessLinuxCodeCompile(bool isStatic, const std::string &compiler, const s
             continue;
         }
 
-        if (!output.empty())
-        {
-            std::cout << output << std::endl;
-            size_t position = output.find("error:");
-            if (position != std::string::npos)
-            {
-                abortCompilation = true;
-                AddLog("Aborting compilation");
-                return;
-            }
-              AddLog(output);
-        }
+     
 
         // if (output != "")
         // {
@@ -740,6 +747,7 @@ bool Module::CompileLinux(bool isStatic)
 
     AddLog("Compile: " + moduleName);
     AddLog("Args: " + finalLinuxArgs);
+    std::cout << "Compile: " << moduleName <<" "<<finalLinuxArgs << std::endl;
 
     processProgress = 0;
     maxProgress = totalCode;
@@ -800,7 +808,7 @@ void ProcessLinuxBuild(bool isStatic, const std::string &moduleName, const std::
     {
         AddLog("Build: " + moduleName + " finished ;) ");
     }
-    //  std::cout << "Build: " << output << std::endl;
+      std::cout << "Build: " << output << std::endl;
 }
 bool Module::BuildLinux(bool isStatic)
 {
@@ -832,7 +840,7 @@ void ProcessEmscriptenCodeCompile(const std::string &compiler, const std::vector
     std::cout << "Thread id: " << id << " starts: " << startIdx << " end: " << endIdx << std::endl;
     std::string finalArgs = args;
 
-    for (int i = startIdx; i < endIdx; ++i)
+   for (int i = startIdx; i < endIdx; ++i)
     {
         if (abortCompilation)
             return;
@@ -840,15 +848,32 @@ void ProcessEmscriptenCodeCompile(const std::string &compiler, const std::vector
         int64_t srtTime = getFileWriteTime(code[i]);
         int64_t buildTime = getFileWriteTime(objs[i]);
         std::string command = compiler + " " + finalArgs + " -c " + code[i] + " -o " + objs[i];
-        std::string output = "";
-
         if (srtTime >= buildTime)
         {
             std::lock_guard<std::mutex> lock(progressMutex);
             processProgress++;
             float progressPercentage = (static_cast<float>(processProgress) / maxProgress) * 100;
             AddLog("Compile [" + std::to_string((int)progressPercentage) + "]% " + code[i] + " > " + objs[i]);
-            output = run_command(command);
+            std::string output  = run_command(command);
+             
+             
+                if (!output.empty())
+                {
+
+
+                    std::cout << output << std::endl;
+                    size_t position = output.find("error:");
+                    if (position != std::string::npos)
+                    {
+                        abortCompilation = true;
+                        AddLog(output);
+              
+                        AddLog("Aborting compilation");
+                        return;
+                    }
+                    AddLog(output);
+                 
+                }
         }
         else
         {
@@ -857,39 +882,6 @@ void ProcessEmscriptenCodeCompile(const std::string &compiler, const std::vector
             processProgress++;
             continue;
         }
-
-        if (output != "")
-        {
-            replace_character(output, "‘", "'");
-            replace_character(output, "’", "'");
-            std::vector<std::string> message = get_result(output);
-            if (message.size() >= 5)
-            {
-                if (message[4] == "warning")
-                {
-                    AddLog("Warning: " + message[0] + "\n Message:   (" + message[5] + ")");
-                }
-                else if (message[4] == "error")
-                {
-                    AddLog("Error: " + message[0] + "\n  Message:   (" + message[5] + ")");
-                    abortCompilation = true;
-                    AddLog("Aborting compilation");
-                    return;
-                }
-                else if (message[4] == "fatal error")
-                {
-                    AddLog("Fatal Error: " + message[0] + " (" + message[5] + ")");
-                    abortCompilation = true;
-                    AddLog("Aborting compilation");
-                    return;
-                }
-            }
-            else
-            {
-                AddLog(output);
-            }
-        }
-
         //  std::cout << "Processing code thered: "<<id <<" src: "<< code[i] << std::endl;
     }
 }
@@ -988,6 +980,11 @@ bool Module::CompileEmscripten()
     {
         compiler = "emcc";
     }
+
+
+    std::cout << moduleName << " Final Web Args: \n"
+              << finalEmscriptenArgs << std::endl;
+
     processProgress = 0;
     maxProgress = totalCode;
     for (int i = 0; i < numThreads; ++i)
@@ -1041,7 +1038,7 @@ void ProcessBuildEmscripten(const std::string &moduleName, const std::string &co
     {
         AddLog("Build: " + moduleName + " finished ;) ");
     }
-    //  std::cout << "Build: " << output << std::endl;
+      std::cout << "Build: " << output << std::endl;
 }
 
 bool Module::BuildEmscripten()
@@ -1143,7 +1140,7 @@ void LoadModules(const std::string &folderPath)
             auto module = std::make_shared<Module>(filePath);
             selectedItems.push_back(false);
             moduleList.push_back(module);
-            AddLog("Load Module: " + module.get()->moduleName);
+           AddLog("Load Module: " + module.get()->moduleName);
             fileNames.push_back(module.get()->moduleName);
             //  std::cout << filePath << std::endl;
             continue;
